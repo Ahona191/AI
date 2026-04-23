@@ -1,0 +1,1105 @@
+#MAP COLORING-MRV# 
+
+variables = ["WA", "NT", "SA", "Q", "NSW", "V", "T"]
+colors = ["Red", "Green", "Blue"]
+
+graph = {
+    "WA": ["NT", "SA"],
+    "NT": ["WA", "SA", "Q"],
+    "SA": ["WA", "NT", "Q", "NSW", "V"],
+    "Q": ["NT", "SA", "NSW"],
+    "NSW": ["Q", "SA", "V"],
+    "V": ["SA", "NSW"],
+    "T": []
+}
+
+
+def is_valid(variable, color, assignment):
+    for neighbor in graph[variable]:
+        if neighbor in assignment and assignment[neighbor] == color:
+            return False
+    return True
+
+
+def select_mrv_variable(assignment):
+    unassigned = [v for v in variables if v not in assignment]
+    
+    min_var = None
+    min_domain_size = float('inf')
+    
+    for var in unassigned:
+        valid_colors = 0
+        for color in colors:
+            if is_valid(var, color, assignment):
+                valid_colors += 1
+        
+        if valid_colors < min_domain_size:
+            min_domain_size = valid_colors
+            min_var = var
+            
+    return min_var
+
+
+def backtrack(assignment):
+    if len(assignment) == len(variables):
+        return assignment
+
+    var = select_mrv_variable(assignment)
+
+    for color in colors:
+        if is_valid(var, color, assignment):
+            assignment[var] = color
+            
+            result = backtrack(assignment)
+            if result:
+                return result
+
+            del assignment[var]
+
+    return None
+
+
+solution = backtrack({})
+print("Solution:")
+print(solution)
+
+
+
+
+
+ 
+#MINI-MAX-DICTIONARY#
+import math
+
+def initial_state():
+    return {
+        "board": [[' ' for _ in range(3)] for _ in range(3)],
+        "player": "X"   # AI is X, Human is O
+    }
+
+def display(state):
+    board = state["board"]
+    print("\n".join([" | ".join(row) for row in board]))
+    print("-" * 9)
+
+def actions(state):
+    board = state["board"]
+    moves = []
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == ' ':
+                moves.append((i, j))
+    return moves
+
+def result(state, action):
+    board = [row[:] for row in state["board"]]  # deep copy 2D
+    r, c = action
+    board[r][c] = state["player"]
+    next_player = 'O' if state["player"] == 'X' else 'X'
+    return {"board": board, "player": next_player}
+
+def utility(state):
+    board = state["board"]
+    lines = []
+
+    # rows and columns
+    for i in range(3):
+        lines.append(board[i])  # row i
+        lines.append([board[0][i], board[1][i], board[2][i]])  # col i
+
+    # diagonals
+    lines.append([board[0][0], board[1][1], board[2][2]])
+    lines.append([board[2][0], board[1][1], board[0][2]])
+
+    if ['X', 'X', 'X'] in lines:
+        return 1
+    if ['O', 'O', 'O'] in lines:
+        return -1
+
+    # draw
+    if all(cell != ' ' for row in board for cell in row):
+        return 0
+
+    return None
+
+def terminal(state):
+    return utility(state) is not None
+
+def max_value(state):
+    if terminal(state):
+        return utility(state)
+
+    v = -math.inf
+    for a in actions(state):
+        v = max(v, min_value(result(state, a)))
+    return v
+
+def min_value(state):
+    if terminal(state):
+        return utility(state)
+
+    v = math.inf
+    for a in actions(state):
+        v = min(v, max_value(result(state, a)))
+    return v
+
+def minimax(state):
+    # AI is X (maximize), Human is O (minimize)
+    if state["player"] == 'X':
+        best_score = -math.inf
+        best_action = None
+        for a in actions(state):
+            score = min_value(result(state, a))
+            if score > best_score:
+                best_score = score
+                best_action = a
+        return best_score, best_action
+    else:
+        best_score = math.inf
+        best_action = None
+        for a in actions(state):
+            score = max_value(result(state, a))
+            if score < best_score:
+                best_score = score
+                best_action = a
+        return best_score, best_action
+
+def play():
+    state = initial_state()
+    print("Welcome to Tic-Tac-Toe! You are O, AI is X.\n")
+    display(state)
+
+    while not terminal(state):
+        if state["player"] == 'O':
+            try:
+                row, col = map(int, input("Enter row and col (0-2 space separated): ").split())
+            except ValueError:
+                print("Invalid input! Enter two numbers like: 1 2")
+                continue
+
+            if (row, col) not in actions(state):
+                print("Invalid move! Try again.")
+                continue
+
+            state = result(state, (row, col))
+
+        else:
+            _, action = minimax(state)
+            print(f"AI plays: {action}")
+            state = result(state, action)
+
+        display(state)
+
+    score = utility(state)
+    if score == 1:
+        print("X wins! (AI)")
+    elif score == -1:
+        print("O wins! (You)")
+    else:
+        print("It's a draw!")
+
+if __name__ == "__main__":
+    play()  
+
+
+
+
+
+
+#MAP COLORING# 
+variables = ["WA", "NT", "SA", "Q", "NSW", "V", "T"]
+
+colors = ["Red", "Green", "Blue"]
+
+graph = {
+    "WA": ["NT", "SA"],
+    "NT": ["WA", "SA", "Q"],
+    "SA": ["WA", "NT", "Q", "NSW", "V"],
+    "Q": ["NT", "SA", "NSW"],
+    "NSW": ["Q", "SA", "V"],
+    "V": ["SA", "NSW"],
+    "T": []  
+}
+
+
+def is_valid(variable, color, assignment):
+    for neighbor in graph[variable]:
+        if neighbor in assignment and assignment[neighbor] == color:
+            return False
+    return True
+
+
+def backtrack(assignment):
+    if len(assignment) == len(variables):
+        return assignment
+
+    unassigned = [v for v in variables if v not in assignment]
+    var = unassigned[0]
+
+    for color in colors:
+        if is_valid(var, color, assignment):
+            assignment[var] = color
+
+            result = backtrack(assignment)
+            if result:
+                return result
+
+            del assignment[var]
+
+    return None
+
+
+solution = backtrack({})
+
+print("Solution:")
+print(solution)
+
+
+
+
+
+
+#MINIMAX-STATE# 
+import math
+
+class State:
+    def __init__(self, board=None, player='X'):
+        if board is None:
+            self.board = [[' ' for _ in range(3)] for _ in range(3)]
+        else:
+            self.board = [row[:] for row in board]
+        self.player = player
+
+    def display(self):
+        print("\n".join([" | ".join(row) for row in self.board]))
+        print("-" * 5)
+
+
+def actions(state):
+    moves = []
+    for i in range(3):
+        for j in range(3):
+            if state.board[i][j]== ' ':
+                moves.append((i,j))
+    return moves
+
+    
+def result(state, action):
+    new_board = [row[:] for row in state.board]
+    row, col = action
+    new_board[row][col] = state.player
+    next_player = 'O' if state.player == 'X' else 'X'
+    return State(new_board, next_player)
+    
+def terminal(state):
+    return utility(state) is not None
+    
+def utility(state):
+    lines = []
+    for i in range(3):
+        lines.append(state.board[i])
+        lines.append([state.board[0][i], state.board[1][i], state.board[2][i]])
+    lines.append([state.board[0][0], state.board[1][1], state.board[2][2]])
+    lines.append([state.board[2][0], state.board[1][1], state.board[0][2]])
+    if ['X','X', 'X'] in lines:
+        return 1
+    elif ['O', 'O', 'O'] in lines:
+        return -1
+    if all(cell != ' ' for row in state.board for cell in row):
+        return 0
+    return None
+  
+
+def max_value(state):
+    if terminal(state) == True:
+        return utility(state)
+    value = -math.inf
+    for action in actions(state):
+        nextState = result(state, action)
+        value = max(value, min_value(nextState))
+    return value
+  
+
+def min_value(state):
+    if terminal(state) == True:
+        return utility(state)
+    value = math.inf
+    for action in actions(state):
+        nextState = result(state, action)
+        value = min(value, max_value(nextState))
+    return value
+
+def minimax(state):
+    if state.player == 'X':
+        bestScore = -math.inf
+        bestAction = None
+        for action in actions(state):
+            nextState = result(state, action)
+            score = min_value(nextState)
+            if bestScore < score:
+                bestAction = action
+                bestScore = score
+        return bestScore, bestAction
+    
+    else:
+        bestScore = math.inf
+        bestAction = None
+        for action in actions(state):
+            nextState = result(state, action)
+            score = max_value(nextState)
+            if bestScore > score:
+                bestAction = action
+                bestScore = score
+        return bestScore, bestAction
+
+def play():
+    state = State()
+    print("Welcome to Tic-Tac-Toe! You are O, AI is X.")
+    state.display()
+
+    while not terminal(state):
+        if state.player == 'O':
+            row, col = map(int, input("Enter row and col (0-2 space separated): ").split())
+            if (row, col) not in actions(state):
+                print("Invalid move! Try again.")
+                continue
+            state = result(state, (row, col))
+        else:
+            _, action = minimax(state)
+            print(f"AI plays: {action}")
+            state = result(state, action)
+        state.display()
+
+    score = utility(state)
+    if score == 1:
+        print("X wins!")
+    elif score == -1:
+        print("O wins!")
+    else:
+        print("It's a draw!")
+
+if __name__ == "__main__":
+    play()
+
+
+
+
+
+
+#N-QUEEN# 
+N = 8
+
+def is_valid(assignment, col, row):
+    for prev_col in range(N):
+        if assignment[prev_col] != -1:
+
+            prev_row = assignment[prev_col]
+
+            if prev_row == row:
+                return False
+
+            if abs(prev_row - row) == abs(prev_col - col):
+                return False
+
+    return True
+
+
+def select_mrv_column(assignment):
+
+    min_count = float('inf')
+    best_col = None
+
+    for col in range(N):
+        if assignment[col] == -1:
+
+            valid_rows = [
+                row for row in range(N)
+                if is_valid(assignment, col, row)
+            ]
+
+            if len(valid_rows) < min_count:
+                min_count = len(valid_rows)
+                best_col = col
+
+    return best_col
+
+
+def backtrack(assignment):
+
+    if -1 not in assignment:
+        return True
+
+    col = select_mrv_column(assignment)
+
+    for row in range(N):
+        if is_valid(assignment, col, row):
+            assignment[col] = row
+
+            if backtrack(assignment):
+                return True
+
+            assignment[col] = -1
+
+    return False
+
+
+assignment = [-1] * N
+backtrack(assignment)
+
+print("Queen positions:")
+print(assignment)
+
+
+def print_board(assignment):
+    for row in range(N):
+        for col in range(N):
+            if assignment[col] == row:
+                print("Q", end=" ")
+            else:
+                print(".", end=" ")
+        print()
+
+
+print("\nBoard:")
+print_board(assignment)
+
+
+
+
+
+
+#Sudoko-solver.py# 
+SIZE = 9
+
+
+def is_valid(board, row, col, num):
+
+    if num in board[row]:
+        return False
+
+    for r in range(SIZE):
+        if board[r][col] == num:
+            return False
+
+    start_row = (row // 3) * 3
+    start_col = (col // 3) * 3
+
+    for r in range(start_row, start_row + 3):
+        for c in range(start_col, start_col + 3):
+            if board[r][c] == num:
+                return False
+
+    return True
+
+
+def select_mrv_cell(board):
+
+    min_count = float('inf')
+    best_cell = None
+
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if board[r][c] == 0:
+
+                valid_numbers = [
+                    num for num in range(1, 10)
+                    if is_valid(board, r, c, num)
+                ]
+
+                if len(valid_numbers) < min_count:
+                    min_count = len(valid_numbers)
+                    best_cell = (r, c)
+
+    return best_cell
+
+
+def solve(board):
+
+    cell = select_mrv_cell(board)
+
+    if not cell:
+        return True
+
+    row, col = cell
+
+    for num in range(1, 10):
+        if is_valid(board, row, col, num):
+            board[row][col] = num
+
+            if solve(board):
+                return True
+
+            board[row][col] = 0
+
+    return False
+
+
+board = [
+    [5,3,0,0,7,0,0,1,0],
+    [6,0,0,1,9,5,0,0,0],
+    [0,9,8,0,0,0,0,6,0],
+    [8,0,0,0,6,0,0,0,3],
+    [4,0,0,8,0,3,0,0,1],
+    [7,0,0,0,2,0,0,0,6],
+    [0,6,0,0,0,0,2,8,0],
+    [0,0,0,4,1,9,0,0,5],
+    [0,0,0,0,8,0,0,7,9]
+]
+
+solve(board)
+
+for row in board:
+    print(row)
+
+
+
+
+
+
+
+#JOB SCHEDULING# 
+tasks = ["A", "B", "C"]
+
+duration = {
+    "A": 2,
+    "B": 2,
+    "C": 1
+}
+
+domain = range(0, 6)
+
+precedence = {
+    "B": ["A"],
+    "C": ["B"]
+}
+
+
+def is_valid(task, start_time, assignment):
+    if task in precedence:
+        for prev_task in precedence[task]:
+            if prev_task in assignment:
+                prev_end = assignment[prev_task] + duration[prev_task]
+                if start_time < prev_end:
+                    return False
+    return True
+
+def select_mrv_task(assignment):
+    unassigned = [t for t in tasks if t not in assignment]
+    
+    min_task = None
+    min_domain_size = float('inf')
+    
+    for task in unassigned:
+        valid_times = [
+            time for time in domain
+            if is_valid(task, time, assignment)
+        ]
+        
+        if len(valid_times) < min_domain_size:
+            min_domain_size = len(valid_times)
+            min_task = task
+            
+    return min_task
+
+
+def backtrack(assignment):
+    if len(assignment) == len(tasks):
+        return assignment
+
+    task = select_mrv_task(assignment)
+
+    for time in domain:
+        if is_valid(task, time, assignment):
+            assignment[task] = time
+            
+            result = backtrack(assignment)
+            if result:
+                return result
+
+            del assignment[task]
+
+    return None
+
+solution = backtrack({})
+print("Schedule:", solution)
+
+
+
+
+
+
+
+#IDDFS# 
+graph = {
+    'A': ['B', 'C'],
+    'B': ['D','E'],
+    'C': [],
+    'D': ['F','G'],
+    'E': [],
+    'F': ['H','I'],
+    'G': ['J','K'],
+    'H': [],
+    'I': [],
+    'J': [],
+    'K': []
+}
+
+
+def dls(graph, start, target, limit, vis):
+    vis.add(start)
+    print(start, end=" ")
+
+    if(start == target):
+        return True
+
+    if(limit == 0):
+        return False
+    
+    for child in graph[start]:
+        if child not in vis:
+            if dls(graph, child, target, limit - 1, vis):
+                return True
+    vis.remove(start)
+    return False
+
+def iddfs(graph, start, target, maxDepth):
+    for depth in range(maxDepth + 1):
+        print("\nDepth limit: ", depth)
+
+        vis = set()
+
+        if dls(graph, start, target, depth, vis):
+            print("\nTarget found at depth:", depth)
+            return True
+    print("\nTarget not found")
+    return False
+
+start='A'
+target='H'
+maxDepth=4
+
+print("\nTarget Found:", iddfs(graph, start, target, maxDepth))
+
+
+
+
+
+
+#DLS# 
+graph = {
+    'A': ['B', 'C'],
+    'B': ['D','E'],
+    'C': [],
+    'D': ['F','G'],
+    'E': [],
+    'F': ['H','I'],
+    'G': ['J','K'],
+    'H': [],
+    'I': [],
+    'J': [],
+    'K': []
+}
+
+
+def dls(graph, start, target, limit, vis):
+    vis.add(start)
+    print(start, end=" ")
+
+    if(start == target):
+        return True
+
+    if(limit == 0):
+        return False
+    
+    for child in graph[start]:
+        if child not in vis:
+            if dls(graph, child, target, limit - 1, vis):
+                return True
+    vis.remove(start)
+    return False
+
+vis = set()
+start = 'A'
+target = 'G'
+limit = 3
+
+print("\nFound: ", dls(graph, start, target, limit, vis))
+
+
+
+
+
+
+
+#DFS# 
+graph = {
+    'A': ['B', 'C'],
+    'B': ['D','E'],
+    'C': [],
+    'D': ['F','G'],
+    'E': [],
+    'F': ['H','I'],
+    'G': ['J','K'],
+    'H': [],
+    'I': [],
+    'J': [],
+    'K': []
+}
+
+
+'''
+def dfs(graph, start, vis):
+    vis.add(start)
+
+    print(start, end=" ")
+
+    for child in graph[start]:
+        if child not in vis:
+            dfs(graph, child, vis)
+
+vis = set()
+dfs(graph, 'A', vis)
+'''
+
+def dfs(graph, start, target, vis, steps):
+    vis.add(start)
+    steps[0] += 1
+    print(start, end=" ")
+
+    if(start == target):
+        return
+
+    for child in graph[start]:
+        if child not in vis:
+            dfs(graph, child, target, vis, steps)
+
+vis = set()
+steps = [0]
+dfs(graph, 'A', 'G', vis, steps)
+print("\n", steps[0])
+
+
+
+
+
+
+#BEST FIRST SEARCH# 
+import heapq
+
+def h(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def greedy_best_first(grid, start, goal):
+    rows, cols = len(grid), len(grid[0])
+
+    pq = []
+    heapq.heappush(pq, (h(start, goal), start))  
+
+    parent = {start: None}
+    visited = set()      
+    explored_count = 0
+
+    directions = [(0,1),(1,0),(0,-1),(-1,0)]
+
+    while pq:
+        _, current = heapq.heappop(pq)
+
+        if current in visited:
+            continue
+
+        visited.add(current)
+        explored_count += 1
+
+        if current == goal:
+            path = []
+            while current:
+                path.append(current)
+                current = parent[current]
+            print(explored_count)
+            return path[::-1]
+
+        for dx, dy in directions:
+            nx, ny = current[0] + dx, current[1] + dy
+            neighbor = (nx, ny)
+
+            if 0 <= nx < rows and 0 <= ny < cols and grid[nx][ny] == 0:
+                if neighbor not in visited:
+                    heapq.heappush(pq, (h(neighbor, goal), neighbor))
+                    parent[neighbor] = current
+
+    return None
+
+grid = [
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # row 0 (B at col 11)
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   # row 6 (A at col 0)
+]
+
+
+start = (6, 0)   
+goal = (0, 11)  
+path = greedy_best_first(grid, start, goal)
+print(path) 
+
+
+
+
+
+
+
+#A-STAR# 
+import heapq
+
+def h(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def a_star(grid, start, goal):
+    rows, cols = len(grid), len(grid[0])
+
+    pq = []
+    heapq.heappush(pq, (0, start))
+
+    g_cost = {start: 0}
+    parent = {start: None}
+
+    directions = [(0,1),(1,0),(0,-1),(-1,0)]
+    explored_count = 0
+
+    while pq:
+        _, current = heapq.heappop(pq)
+        explored_count+=1
+
+        if current == goal:
+            path = []
+            while current:
+                path.append(current)
+                current = parent[current]
+            print(explored_count)
+            return path[::-1]
+
+        for dx, dy in directions:
+            nx, ny = current[0] + dx, current[1] + dy
+            neighbor = (nx, ny)
+
+            if 0 <= nx < rows and 0 <= ny < cols and grid[nx][ny] == 0:
+                new_g = g_cost[current] + 1
+
+                if neighbor not in g_cost or new_g < g_cost[neighbor]:
+                    g_cost[neighbor] = new_g
+                    f = new_g + h(neighbor, goal)
+                    heapq.heappush(pq, (f, neighbor))
+                    parent[neighbor] = current
+
+    return None
+
+grid = [
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # row 0 (B at col 11)
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   # row 6 (A at col 0)
+]
+
+
+start = (6, 0)   
+goal = (0, 11)   
+path = a_star(grid, start, goal)
+print(path) 
+
+
+
+
+
+
+#FUZZY# 
+import numpy as np
+
+# ------------------------------------------------------------
+# Fuzzy Inference System (Mamdani) - Restaurant Tipping Example
+# Based on the uploaded lecture slides.
+# Inputs:
+#   service: 0 to 10
+#   food   : 0 to 10
+# Output:
+#   tip    : 0 to 25 (%)
+# ------------------------------------------------------------
+
+
+# ---------- Membership functions ----------
+def trimf(x, abc):
+    """Triangular membership function."""
+    a, b, c = abc
+    x = np.asarray(x, dtype=float)
+    y = np.zeros_like(x)
+
+    # Left slope
+    if a != b:
+        idx = (a < x) & (x < b)
+        y[idx] = (x[idx] - a) / (b - a)
+
+    # Peak
+    y[x == b] = 1.0
+
+    # Right slope
+    if b != c:
+        idx = (b < x) & (x < c)
+        y[idx] = (c - x[idx]) / (c - b)
+
+    return np.clip(y, 0, 1)
+
+
+def trapmf(x, abcd):
+    """Trapezoidal membership function."""
+    a, b, c, d = abcd
+    x = np.asarray(x, dtype=float)
+    y = np.zeros_like(x)
+
+    # Rising edge
+    if a != b:
+        idx = (a < x) & (x < b)
+        y[idx] = (x[idx] - a) / (b - a)
+
+    # Top
+    idx = (b <= x) & (x <= c)
+    y[idx] = 1.0
+
+    # Falling edge
+    if c != d:
+        idx = (c < x) & (x < d)
+        y[idx] = (d - x[idx]) / (d - c)
+
+    return np.clip(y, 0, 1)
+
+
+# ---------- Input/Output universe ----------
+service_universe = np.linspace(0, 10, 1001)
+food_universe = np.linspace(0, 10, 1001)
+tip_universe = np.linspace(0, 25, 2501)
+
+
+# ---------- Fuzzy sets ----------
+# Service: poor, good, excellent
+service_poor = trimf(service_universe, [0, 0, 5])
+service_good = trimf(service_universe, [0, 5, 10])
+service_excellent = trimf(service_universe, [5, 10, 10])
+
+# Food: bad, delicious
+food_bad = trimf(food_universe, [0, 0, 10])
+food_delicious = trimf(food_universe, [0, 10, 10])
+
+# Tip: cheap, average, generous
+# Chosen to closely match the slide illustration.
+tip_cheap = trimf(tip_universe, [5, 5, 13])
+tip_average = trimf(tip_universe, [10, 15, 20])
+tip_generous = trimf(tip_universe, [17, 25, 25])
+
+
+# ---------- Helper to get membership for crisp value ----------
+def fuzzify_input(x_service, x_food):
+    mu_service = {
+        "poor": float(trimf([x_service], [0, 0, 5])[0]),
+        "good": float(trimf([x_service], [0, 5, 10])[0]),
+        "excellent": float(trimf([x_service], [5, 10, 10])[0]),
+    }
+
+    mu_food = {
+        "bad": float(trimf([x_food], [0, 0, 10])[0]),
+        "delicious": float(trimf([x_food], [0, 10, 10])[0]),
+    }
+
+    return mu_service, mu_food
+
+
+# ---------- Mamdani FIS ----------
+def fis_tip(service_value, food_value):
+    if not (0 <= service_value <= 10 and 0 <= food_value <= 10):
+        raise ValueError("service and food must be within 0 to 10")
+
+    mu_service, mu_food = fuzzify_input(service_value, food_value)
+
+    # Rules:
+    # R1: If service is poor OR food is bad -> tip is cheap
+    rule1 = max(mu_service["poor"], mu_food["bad"])
+
+    # R2: If service is good -> tip is average
+    rule2 = mu_service["good"]
+
+    # R3: If service is excellent OR food is delicious -> tip is generous
+    rule3 = max(mu_service["excellent"], mu_food["delicious"])
+
+    # Implication (min clipping)
+    out_cheap = np.minimum(rule1, tip_cheap)
+    out_average = np.minimum(rule2, tip_average)
+    out_generous = np.minimum(rule3, tip_generous)
+
+    # Aggregation (max)
+    aggregated = np.maximum.reduce([out_cheap, out_average, out_generous])
+
+    # Defuzzification (centroid)
+    area = np.sum(aggregated)
+    if area == 0:
+        crisp_tip = 0.0
+    else:
+        crisp_tip = float(np.sum(tip_universe * aggregated) / area)
+
+    return {
+        "service_membership": mu_service,
+        "food_membership": mu_food,
+        "rule_strengths": {
+            "cheap": rule1,
+            "average": rule2,
+            "generous": rule3,
+        },
+        "crisp_tip": crisp_tip,
+    }
+
+
+# ---------- CLI / demo ----------
+def main():
+    print("Mamdani Fuzzy Inference System - Restaurant Tipping")
+    print("Range: service = 0..10, food = 0..10")
+    print("Example from slide: service = 3, food = 6")
+    print("-" * 55)
+
+    try:
+        service_value = input("Enter service quality (0-10): ").strip()
+        food_value = input("Enter food quality (0-10): ").strip()
+
+        if service_value == "":
+            service_value = 3
+        else:
+            service_value = float(service_value)
+
+        if food_value == "":
+            food_value = 6
+        else:
+            food_value = float(food_value)
+
+        result = fis_tip(service_value, food_value)
+
+        print("\nFuzzification:")
+        print("Service:", result["service_membership"])
+        print("Food   :", result["food_membership"])
+
+        print("\nRule strengths:")
+        print(result["rule_strengths"])
+
+        print(f"\nDefuzzified tip = {result['crisp_tip']:.2f}%")
+
+    except ValueError as e:
+        print("Error:", e)
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
